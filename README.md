@@ -7,18 +7,18 @@
 <br>
 
 ## Installation
+You may need to install [Bun](https://bun.sh/).\
+In the directory, run these commands:
 
-You may need to install [Node.js](https://nodejs.org/), as well as the [Yarn Package Manager](https://classic.yarnpkg.com/en/docs/install).\
-After doing so, download or clone this repository and install the dependencies with:
 ```bash
-$ npm install
+$ bun install
 ```
 
 ## Running the Server
 
 Run the server with:
 ```bash
-$ npm run server
+$ bun run server
 ```
 This builds and runs the server.
 

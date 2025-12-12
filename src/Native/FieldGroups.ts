@@ -20,7 +20,7 @@
 import { ValidScoreboardIndex, Stat, Tank, Color } from "../Const/Enums";
 import { DevTank } from "../Const/DevTankDefinitions";
 import { Entity } from "./Entity";
- /* <template> auto-generated */ 
+/* <template> auto-generated */
 export type RelationsFieldName = "parent" | "owner" | "team";
 export type BarrelFieldName = "flags" | "reloadTime" | "trapezoidDirection";
 export type PhysicsFieldName = "flags" | "sides" | "size" | "width" | "absorbtionFactor" | "pushFactor";
@@ -56,7 +56,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [0](value) {
         if (value === this.values[0]) return;
-            
+
         this.state[0] |= 1;
         this.values[0] = value;
 
@@ -68,7 +68,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [1](value) {
         if (value === this.values[1]) return;
-            
+
         this.state[1] |= 1;
         this.values[1] = value;
 
@@ -80,7 +80,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [2](value) {
         if (value === this.values[2]) return;
-            
+
         this.state[2] |= 1;
         this.values[2] = value;
 
@@ -92,7 +92,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [3](value) {
         if (value === this.values[3]) return;
-            
+
         this.state[3] |= 1;
         this.values[3] = value;
 
@@ -104,7 +104,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [4](value) {
         if (value === this.values[4]) return;
-            
+
         this.state[4] |= 1;
         this.values[4] = value;
 
@@ -116,7 +116,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [5](value) {
         if (value === this.values[5]) return;
-            
+
         this.state[5] |= 1;
         this.values[5] = value;
 
@@ -128,7 +128,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [6](value) {
         if (value === this.values[6]) return;
-            
+
         this.state[6] |= 1;
         this.values[6] = value;
 
@@ -140,7 +140,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [7](value) {
         if (value === this.values[7]) return;
-            
+
         this.state[7] |= 1;
         this.values[7] = value;
 
@@ -152,7 +152,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [8](value) {
         if (value === this.values[8]) return;
-            
+
         this.state[8] |= 1;
         this.values[8] = value;
 
@@ -164,7 +164,7 @@ export class ScoreboardTable<ValueType> implements Record<ValidScoreboardIndex, 
     }
     set [9](value) {
         if (value === this.values[9]) return;
-            
+
         this.state[9] |= 1;
         this.values[9] = value;
 
@@ -195,7 +195,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [0](value) {
         if (value === this.values[0]) return;
-            
+
         this.state[0] |= 1;
         this.values[0] = value;
 
@@ -207,7 +207,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [1](value) {
         if (value === this.values[1]) return;
-            
+
         this.state[1] |= 1;
         this.values[1] = value;
 
@@ -219,7 +219,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [2](value) {
         if (value === this.values[2]) return;
-            
+
         this.state[2] |= 1;
         this.values[2] = value;
 
@@ -231,7 +231,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [3](value) {
         if (value === this.values[3]) return;
-            
+
         this.state[3] |= 1;
         this.values[3] = value;
 
@@ -243,7 +243,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [4](value) {
         if (value === this.values[4]) return;
-            
+
         this.state[4] |= 1;
         this.values[4] = value;
 
@@ -255,7 +255,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [5](value) {
         if (value === this.values[5]) return;
-            
+
         this.state[5] |= 1;
         this.values[5] = value;
 
@@ -267,7 +267,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [6](value) {
         if (value === this.values[6]) return;
-            
+
         this.state[6] |= 1;
         this.values[6] = value;
 
@@ -279,7 +279,7 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
     set [7](value) {
         if (value === this.values[7]) return;
-            
+
         this.state[7] |= 1;
         this.values[7] = value;
 
@@ -288,8 +288,8 @@ export class CameraTable<ValueType> implements Record<Stat, ValueType> {
     }
 }
 
- /* <template> auto-generated */ 
- /* <template> auto-generated */ 
+/* <template> auto-generated */
+/* <template> auto-generated */
 export class RelationsGroup {
     entity: Entity;
     state: Uint8Array = new Uint8Array(3);
@@ -450,7 +450,7 @@ export class CameraGroup {
         player: null,
         FOV: 0.35,
         level: 1,
-        tank: 53,
+        tank: 53 as Tank,
         levelbarProgress: 0,
         levelbarMax: 0,
         statsAvailable: 0,

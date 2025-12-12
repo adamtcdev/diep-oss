@@ -19,7 +19,7 @@
 import * as config from "./config";
 import * as util from "./util";
 import { createHash } from "crypto";
-import { WebSocket } from "uWebSockets.js";
+import { ServerWebSocket } from "bun";
 import Reader from "./Coder/Reader";
 import Writer from "./Coder/Writer";
 import GameServer from "./Game";
@@ -100,7 +100,7 @@ export default class Client {
     /** Current game server. */
     public game: GameServer;
     /** Inner websocket connection. */
-    public ws: WebSocket<ClientWrapper> | null;
+    public ws: ServerWebSocket<ClientWrapper> | null;
     /** Client's camera entity. */
     public camera: ClientCamera | null = null;
 
@@ -114,7 +114,7 @@ export default class Client {
         return new WSWriterStream(this);
     }
 
-    public constructor(ws: WebSocket<ClientWrapper>, game: GameServer) {
+    public constructor(ws: ServerWebSocket<ClientWrapper>, game: GameServer) {
         this.game = game;
         this.game.clients.add(this);
         this.ws = ws;
@@ -133,7 +133,7 @@ export default class Client {
     public send(data: Uint8Array) {
         const ws = this.ws;
         if (!ws) throw new Error("Can't write to a closed websocket - shouldn't be referencing a closed client");
-        ws.send(data, true, true);
+        ws.send(data, true);
     }
 
     /** Handles close event. */
@@ -516,16 +516,16 @@ export default class Client {
         const ws = this.ws;
         if(!ws) return;
 
-        util.saveToLog("IP Banned", "Banned " + ws.getUserData().ipAddress + this.toString(true), 0xEE326A);
+        util.saveToLog("IP Banned", "Banned " + ws.data.ipAddress + this.toString(true), 0xEE326A);
         if (this.accessLevel >= config.unbannableLevelMinimum) {
-            util.saveToLog("IP Ban Cancelled", "Cancelled ban on " + ws.getUserData().ipAddress + this.toString(true), 0x6A32EE);
+            util.saveToLog("IP Ban Cancelled", "Cancelled ban on " + ws.data.ipAddress + this.toString(true), 0x6A32EE);
             return;
         }
 
-        bannedClients.add(ws.getUserData().ipAddress)
+        bannedClients.add(ws.data.ipAddress)
 
         for (const client of this.game.clients) {
-            if(client.ws?.getUserData().ipAddress === ws.getUserData().ipAddress) client.terminate();
+            if(client.ws?.data.ipAddress === ws.data.ipAddress) client.terminate();
         }
     }
     
@@ -604,7 +604,7 @@ export default class Client {
 
         if (this.camera?.cameraData?.player?.nameData?.name) tokens.push("name=" + JSON.stringify(this.camera?.cameraData?.player?.nameData?.name));
         if (verbose) {
-            if (this.ws) tokens.push("ip=" + this.ws.getUserData().ipAddress);
+            if (this.ws) tokens.push("ip=" + this.ws.data.ipAddress);
             if (this.game.gamemode) tokens.push("game.gamemode=" + this.game.gamemode);
         }
         if (this.terminated) tokens.push("(terminated)");

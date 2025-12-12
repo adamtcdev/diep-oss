@@ -17,7 +17,7 @@
 */
 
 import * as fs from "fs";
-import { App, SHARED_COMPRESSOR, WebSocket, WebSocketBehavior } from "uWebSockets.js";
+import { ServerWebSocket } from "bun";
 import Client, { ClientWrapper } from "./Client";
 import * as config from "./config"
 import * as util from "./util";
@@ -39,134 +39,154 @@ if (ENABLE_CLIENT) util.log(`Client hosting is enabled and is now being hosted f
 export const bannedClients = new Set<string>();
 const connections = new Map<string, number>();
 const allClients = new Set<Client>();
-const app = App({});
 const games: GameServer[] = [];
 
-app.ws("/*", {
-    compression: SHARED_COMPRESSOR,
-    sendPingsAutomatically: true,
-    maxPayloadLength: config.wssMaxMessageSize,
-    idleTimeout: 10,
-    upgrade: (res, req, context) => {
-        res.upgrade({ client: null, ipAddress: "", gamemode: req.getUrl().slice(1) } as ClientWrapper,
-            req.getHeader('sec-websocket-key'),
-            req.getHeader('sec-websocket-protocol'),
-            req.getHeader('sec-websocket-extensions'),
-            context);
-    },
-    open: (ws: WebSocket<ClientWrapper>) => {
-        const ipAddress = Buffer.from(ws.getRemoteAddressAsText()).toString();
-        let conns = 0;
-        if (connections.has(ipAddress)) conns = connections.get(ipAddress) as number;
-        if (conns >= config.connectionsPerIp || bannedClients.has(ipAddress)) {
-            return ws.close();
-        }
-        connections.set(ipAddress, conns + 1);
-        const game = games.find(({ gamemode }) => gamemode === ws.getUserData().gamemode);
-        if (!game) {
-            return ws.close();
-        }
-        const client = new Client(ws, game);
-        allClients.add(client);
-        ws.getUserData().ipAddress = ipAddress;
-        ws.getUserData().client = client;
-    },
-    message: (ws: WebSocket<ClientWrapper>, message, isBinary) => {
-        const {client} = ws.getUserData();
-        if (!client) throw new Error("Unexistant client for websocket");
-        client.onMessage(message, isBinary);
-    },
-    close: (ws: WebSocket<ClientWrapper>, code, message) => {
-        const {client, ipAddress} = ws.getUserData();
-        if (client) {
-            connections.set(ipAddress, connections.get(ipAddress) as number - 1);
-            client.onClose(code, message);
-            allClients.delete(client);
-        }
-    }
-} as WebSocketBehavior<ClientWrapper>);
+// Initialize games
+const ffa = new GameServer(FFAArena, "FFA");
+const sbx = new GameServer(SandboxArena, "Sandbox");
+games.push(ffa, sbx);
 
-app.get("/*", (res, req) => {
-    util.saveToVLog("Incoming request to " + req.getUrl());
-    res.onAborted(() => {});
-    if (ENABLE_API && req.getUrl().startsWith(`/${config.apiLocation}`)) {
-        switch (req.getUrl().slice(config.apiLocation.length + 1)) {
-            case "/":
-                res.writeStatus("200 OK").end();
-                return;
-            case "/tanks":
-                res.writeStatus("200 OK").end(JSON.stringify(TankDefinitions));
-                return;
-            case "/servers":
-                res.writeStatus("200 OK").end(JSON.stringify(games.map(({ gamemode, name }) => ({ gamemode, name }))));
-                return;
-            case "/commands":
-                res.writeStatus("200 OK").end(JSON.stringify(config.enableCommands ? Object.values(commandDefinitions) : []));
-                return;
-            case "/colors":
-                res.writeStatus("200 OK").end(JSON.stringify(ColorsHexCode));
-                return;
-        }
-    }
+Bun.serve<ClientWrapper>({
+    port: PORT,
+    fetch(req, server) {
+        const url = new URL(req.url);
 
-    if (ENABLE_CLIENT) {
-        let file: string | null = null;
-        let contentType = "text/html"
-        switch (req.getUrl()) {
-            case "/":
-                file = config.clientLocation + "/index.html";
-                contentType = "text/html";
-                break;
-            case "/loader.js":
-                file = config.clientLocation + "/loader.js";
-                contentType = "application/javascript";
-                break;
-            case "/input.js":
-                file = config.clientLocation + "/input.js";
-                contentType = "application/javascript";
-                break;
-            case "/dma.js":
-                file = config.clientLocation + "/dma.js";
-                contentType = "application/javascript";
-                break;
-            case "/config.js":
-                file = config.clientLocation + "/config.js";
-                contentType = "application/javascript";
-                break;
-        }
-
-        res.writeHeader("Content-Type", contentType + "; charset=utf-8");
-
-        if (file && fs.existsSync(file)) {
-            res.writeStatus("200 OK").end(fs.readFileSync(file));
+        // WebSocket Upgrade
+        if (server.upgrade(req, {
+            data: {
+                client: null,
+                ipAddress: server.requestIP(req)?.address || "unknown",
+                gamemode: url.pathname.slice(1)
+            }
+        })) {
             return;
         }
 
-        res.writeStatus("404 Not Found").end(fs.readFileSync(config.clientLocation + "/404.html"));
-        return;
-    } 
+        util.saveToVLog("Incoming request to " + url.pathname);
+
+        // API Handling
+        if (ENABLE_API && url.pathname.startsWith(`/${config.apiLocation}`)) {
+            const apiPath = url.pathname.slice(config.apiLocation.length + 1);
+            switch (apiPath) {
+                case "/":
+                    return new Response(null, { status: 200 });
+                case "/tanks":
+                    return new Response(JSON.stringify(TankDefinitions));
+                case "/servers":
+                    return new Response(JSON.stringify(games.map(({ gamemode, name }) => ({ gamemode, name }))));
+                case "/commands":
+                    return new Response(JSON.stringify(config.enableCommands ? Object.values(commandDefinitions) : []));
+                case "/colors":
+                    return new Response(JSON.stringify(ColorsHexCode));
+            }
+        }
+
+        // Client File Serving
+        if (ENABLE_CLIENT) {
+            let file: string | null = null;
+            let contentType = "text/html";
+
+            switch (url.pathname) {
+                case "/":
+                    file = config.clientLocation + "/index.html";
+                    contentType = "text/html";
+                    break;
+                case "/loader.js":
+                    file = config.clientLocation + "/loader.js";
+                    contentType = "application/javascript";
+                    break;
+                case "/input.js":
+                    file = config.clientLocation + "/input.js";
+                    contentType = "application/javascript";
+                    break;
+                case "/dma.js":
+                    file = config.clientLocation + "/dma.js";
+                    contentType = "application/javascript";
+                    break;
+                case "/config.js":
+                    file = config.clientLocation + "/config.js";
+                    contentType = "application/javascript";
+                    break;
+            }
+
+            if (file && fs.existsSync(file)) {
+                return new Response(Bun.file(file), {
+                    headers: { "Content-Type": contentType + "; charset=utf-8" }
+                });
+            }
+
+            return new Response(Bun.file(config.clientLocation + "/404.html"), { status: 404 });
+        }
+
+        return new Response("Not Found", { status: 404 });
+    },
+    websocket: {
+        maxPayloadLength: config.wssMaxMessageSize,
+        idleTimeout: 10,
+        open(ws) {
+            const ipAddress = ws.data.ipAddress;
+            let conns = 0;
+            if (connections.has(ipAddress)) conns = connections.get(ipAddress) as number;
+
+            if (conns >= config.connectionsPerIp || bannedClients.has(ipAddress)) {
+                ws.close();
+                return;
+            }
+
+            connections.set(ipAddress, conns + 1);
+
+            const game = games.find(({ gamemode }) => gamemode === ws.data.gamemode);
+            if (!game) {
+                ws.close();
+                return;
+            }
+
+            const client = new Client(ws, game);
+            allClients.add(client);
+            ws.data.client = client;
+        },
+        message(ws, message) {
+            const { client } = ws.data;
+            if (!client) throw new Error("Non-existent client for websocket");
+
+            // Bun passes message as string | Buffer / Uint8Array. 
+            // Client.onMessage expects ArrayBuffer and boolean for isBinary.
+            // But checking Client.ts logic: "if (!isBinary) return this.terminate();"
+            // So we only really care about binary messages in current logic.
+
+            if (typeof message === "string") {
+                // The original logic calls terminate() if !isBinary.
+                // We can simulate this:
+                client.onMessage(new ArrayBuffer(0), false);
+            } else {
+                // message is Buffer (Uint8Array)
+                client.onMessage(message.buffer as ArrayBuffer, true);
+            }
+        },
+        close(ws, code, message) {
+            const { client, ipAddress } = ws.data;
+            if (client) {
+                connections.set(ipAddress, (connections.get(ipAddress) as number) - 1);
+                // Bun message is string, Client expects ArrayBuffer? 
+                // Client.onClose signature: (code: number, message: ArrayBuffer)
+                // Let's pass a dummy buffer if message is string, or convert it.
+                // Usually message is not critical for logic here.
+                const msgBuffer = typeof message === 'string' ? new TextEncoder().encode(message).buffer : new ArrayBuffer(0);
+
+                client.onClose(code, msgBuffer);
+                allClients.delete(client);
+            }
+        }
+    }
 });
 
-app.listen(PORT, (success) => {
-    if (!success) throw new Error("Server failed");
+util.log(`Listening on port ${PORT}`);
 
-    util.log(`Listening on port ${PORT}`);
-
-    // RULES(0): No two game servers should share the same endpoint
-    //
-    // NOTES(0): As of now, both servers run on the same process (and thread) here
-    const ffa = new GameServer(FFAArena, "FFA");
-    const sbx = new GameServer(SandboxArena, "Sandbox");
-    
-    games.push(ffa, sbx);
-
-    util.saveToLog("Servers up", "All servers booted up.", 0x37F554);
-    util.log("Dumping endpoint -> gamemode routing table");
-    for (const game of games) console.log("> " + `localhost:${config.serverPort}/${game.gamemode}`.padEnd(40, " ") + " -> " + game.name);
-});
+util.saveToLog("Servers up", "All servers booted up.", 0x37F554);
+util.log("Dumping endpoint -> gamemode routing table");
+for (const game of games) console.log("> " + `localhost:${config.serverPort}/${game.gamemode}`.padEnd(40, " ") + " -> " + game.name);
 
 process.on("uncaughtException", (error) => {
     util.saveToLog("Uncaught Exception", '```\n' + error.stack + '\n```', 0xFF0000);
-
     throw error;
 });

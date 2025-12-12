@@ -13,26 +13,26 @@
   ],
   "license": "AGPL-3.0-only",
   "scripts": {
-    "build": "npx tsup",
-    "dev": "npx tsup --watch --onSuccess \"node lib/index.js\"",
-    "check": "npx tsc --noEmit",
-    "start": "node index",
-    "server": "npm run build && npm run start",
+    "build": "bun x tsup",
+    "dev": "bun x tsup --watch --onSuccess \"bun lib/index.js\"",
+    "check": "bun x tsc --noEmit",
+    "start": "bun index",
+    "server": "bun run build && bun run start",
     "docker:build": "docker build --tag diepcustom .",
     "docker:start": "docker run --pull never --rm --publish ${PORT:-8080}:8080 --env PORT=8080 --env DEV_PASSWORD_HASH --env SERVER_INFO --env NODE_ENV --init --interactive --tty diepcustom",
-    "docker": "npm run docker:build && npm run docker:start"
+    "docker": "bun run docker:build && bun run docker:start"
   },
   "engines": {
-    "node": ">=16.3"
+    "bun": ">=1.0.0"
   },
   "dependencies": {
     "chalk": "^4.1.1",
-    "tweetnacl": "^1.0.3",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.52.0"
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^16.4.0",
     "tsup": "^8.5.0",
-    "typescript": "^4.8.2"
+    "typescript": "latest",
+    "bun-types": "latest"
   }
 }

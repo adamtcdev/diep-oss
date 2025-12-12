@@ -1,7 +1,7 @@
-FROM node:16
+FROM oven/bun:1
 WORKDIR /usr/src/app
 COPY . .
-RUN npm ci --include=dev
-RUN npm run build
-USER node
-CMD npm run start
+RUN bun install
+RUN bun run build
+USER bun
+CMD bun run start
